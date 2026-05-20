@@ -12,7 +12,7 @@
 
 PDO предоставляет режимы: FETCH_ASSOC (ассоциативный массив), FETCH_NUM (числовой массив), FETCH_BOTH (оба), FETCH_OBJ (объект), FETCH_CLASS (объект класса).
 
-Я выбрал FETCH_ASSOC по умолчанию, установив в Database.php опцию PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC.
+Я выбрала FETCH_ASSOC по умолчанию, установив в Database.php опцию PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC.
 
 Причина: код становится читаемее при обращении $row['last_name'] вместо $row[1], экономится память по сравнению с FETCH_BOTH, удобно для преобразования в JSON.
 
@@ -23,4 +23,4 @@ $stmt = $this->pdo->prepare($sql);
 $stmt->execute();
 return $stmt->fetchAll(); // возвращает массив ассоциативных массивов
 
-Дата: 20.05.2026
+Дата: 19.05.2026
