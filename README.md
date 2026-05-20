@@ -22,4 +22,4 @@
 
 1. Скопировать config.example.php в config.php и заполнить параметры БД
 2. Загрузить файлы на хостинг Beget в папку public_html/sportschool
-3. Открыть в браузере https://ваш_логин.beget.tech/sportschool/demo.php
+3. Открыть в браузере https://a92371k6.beget.tech/sportschool/demo.php
