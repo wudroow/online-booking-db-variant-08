@@ -1,0 +1,40 @@
+<div class="actions">
+    <a href="index.php?entity=sport_groups&action=create" class="btn btn-primary">+ Добавить услугу</a>
+    <form method="GET" class="search-form">
+        <input type="hidden" name="entity" value="sport_groups">
+        <input type="hidden" name="action" value="list">
+        <input type="text" name="search" placeholder="Поиск по названию" value="<?= htmlspecialchars($search ?? '') ?>">
+        <button type="submit" class="btn">Найти</button>
+    </form>
+</div>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Название группы</th>
+            <th>Вместимость</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach ($items as $item): ?>
+        <tr>
+            <td><?= htmlspecialchars($item['group_id']) ?></td>
+            <td><?= htmlspecialchars($item['group_name'] ?? '-') ?></td>
+            <td><?= htmlspecialchars($item['current_capacity'] ?? '0') ?></td>
+            <td class="actions-cell">
+                <a href="index.php?entity=sport_groups&action=view&id=<?= $item['group_id'] ?>" class="btn-sm">👁️</a>
+                <a href="index.php?entity=sport_groups&action=edit&id=<?= $item['group_id'] ?>" class="btn-sm">✏️</a>
+                <a href="index.php?entity=sport_groups&action=delete&id=<?= $item['group_id'] ?>" class="btn-sm btn-danger">🗑️</a>
+            </td>
+        </tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>
+
+<div class="pagination">
+    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+        <a href="index.php?entity=sport_groups&action=list&page=<?= $i ?>&search=<?= urlencode($search ?? '') ?>" class="<?= $i == $page ? 'active' : '' ?>"><?= $i ?></a>
+    <?php endfor; ?>
+</div>
