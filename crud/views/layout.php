@@ -9,26 +9,25 @@
 <body>
     <div class="container">
         <h1><?= htmlspecialchars($title) ?></h1>
-        
-        <?php if (isset($_SESSION['flash'])): ?>
-            <div class="alert alert-<?= $_SESSION['flash']['type'] ?>">
-                <?= htmlspecialchars($_SESSION['flash']['message']) ?>
-                <?php unset($_SESSION['flash']); ?>
-            </div>
-        <?php endif; ?>
-        
         <nav class="menu">
-            <a href="index.php?entity=athletes&action=list">Спортсмены</a>
-            <a href="index.php?entity=coaches&action=list">Тренеры</a>
-            <a href="index.php?entity=sport_groups&action=list">Группы</a>
-        </nav>
+    <a href="index.php?entity=athletes&action=list">Спортсмены</a>
+    <a href="index.php?entity=coaches&action=list">Тренеры</a>
+    <a href="index.php?entity=sport_groups&action=list">Услуги</a>
+</nav>
         
-        <?php
-        if ($action === 'list') require 'views/list.php';
-        elseif ($action === 'view') require 'views/view.php';
-        elseif ($action === 'delete') require 'views/delete.php';
-        else require 'views/form.php';
-        ?>
+       <?php
+if ($entity === 'sport_groups') {
+    if ($action === 'list') require 'views/list_groups.php';
+    elseif ($action === 'view') require 'views/view_groups.php';
+    elseif ($action === 'delete') require 'views/delete_groups.php';
+    elseif ($action === 'create' || $action === 'edit') require 'views/form_groups.php';
+} else {
+    if ($action === 'list') require 'views/list.php';
+    elseif ($action === 'view') require 'views/view.php';
+    elseif ($action === 'delete') require 'views/delete.php';
+    else require 'views/form.php';
+}
+?>
     </div>
 </body>
 </html>
