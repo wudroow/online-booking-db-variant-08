@@ -1,0 +1,8 @@
+<div class="card">
+    <p><strong>ID:</strong> <?= htmlspecialchars($item['group_id']) ?></p>
+    <p><strong>Название группы:</strong> <?= htmlspecialchars($item['group_name'] ?? '-') ?></p>
+    <p><strong>Вместимость:</strong> <?= htmlspecialchars($item['current_capacity'] ?? '0') ?></p>
+    <p><strong>Описание:</strong> <?= htmlspecialchars($item['schedule_description'] ?? '-') ?></p>
+    
+    <a href="index.php?entity=sport_groups&action=list" class="btn">← Назад к списку</a>
+</div>
