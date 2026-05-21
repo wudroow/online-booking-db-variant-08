@@ -24,26 +24,26 @@ class CrudController
         
         switch ($action) {
             case 'list':
-                $this->listAction($repo, $entity);
+                $this->listAction($repo, $entity, $action);
                 break;
             case 'create':
-                $this->createAction($repo, $entity);
+                $this->createAction($repo, $entity, $action);
                 break;
             case 'edit':
-                $this->editAction($repo, $entity);
+                $this->editAction($repo, $entity, $action);
                 break;
             case 'delete':
-                $this->deleteAction($repo, $entity);
+                $this->deleteAction($repo, $entity, $action);
                 break;
             case 'view':
-                $this->viewAction($repo, $entity);
+                $this->viewAction($repo, $entity, $action);
                 break;
             default:
-                $this->listAction($repo, $entity);
+                $this->listAction($repo, $entity, 'list');
         }
     }
     
-    private function listAction($repo, $entity)
+    private function listAction($repo, $entity, $action)
     {
         $page = $_GET['page'] ?? 1;
         $search = $_GET['search'] ?? '';
@@ -62,10 +62,11 @@ class CrudController
         $totalPages = ceil($total / $limit);
         
         $title = $this->titles[$entity] ?? $entity;
+        $isEdit = false; // Добавлено, чтобы избежать Warning в форме, если она как-то затронута в списке
         require_once 'views/layout.php';
     }
     
-    private function createAction($repo, $entity)
+    private function createAction($repo, $entity, $action)
     {
         $errors = [];
         $data = $_POST;
@@ -88,11 +89,11 @@ class CrudController
         }
         
         $title = $this->titles[$entity] ?? $entity;
-        $isEdit = false;
+        $isEdit = false; // Явно передаем, что это создание, а не редактирование
         require_once 'views/layout.php';
     }
     
-    private function editAction($repo, $entity)
+    private function editAction($repo, $entity, $action)
     {
         $id = $_GET['id'] ?? 0;
         $item = $repo->findById($id);
@@ -117,11 +118,11 @@ class CrudController
         }
         
         $title = $this->titles[$entity] ?? $entity;
-        $isEdit = true;
+        $isEdit = true; // Явно передаем, что это режим редактирования
         require_once 'views/layout.php';
     }
     
-    private function deleteAction($repo, $entity)
+    private function deleteAction($repo, $entity, $action)
     {
         $id = $_GET['id'] ?? 0;
         
@@ -140,14 +141,16 @@ class CrudController
         
         $item = $repo->findById($id);
         $title = $this->titles[$entity] ?? $entity;
+        $isEdit = false;
         require_once 'views/layout.php';
     }
     
-    private function viewAction($repo, $entity)
+    private function viewAction($repo, $entity, $action)
     {
         $id = $_GET['id'] ?? 0;
         $item = $repo->findById($id);
         $title = $this->titles[$entity] ?? $entity;
+        $isEdit = false;
         require_once 'views/layout.php';
     }
 }
