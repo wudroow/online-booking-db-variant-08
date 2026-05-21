@@ -1,6 +1,7 @@
 <?php
 class CrudController
 {
+    private $pdo;
     private $repositories = [
         'athletes' => 'AthleteRepository',
         'coaches' => 'CoachRepository',
@@ -13,42 +14,45 @@ class CrudController
         'sport_groups' => 'Тренировочные группы'
     ];
 
+    public function __construct()
+    {
+        $this->pdo = Database::getInstance()->getConnection();
+    }
+
     public function handle($entity, $action)
     {
-        $pdo = Database::getInstance()->getConnection();
-        $repoClass = $this->repositories[$entity] ?? null;
-        if (!$repoClass) {
-            die('Неизвестная сущность');
-        }
-        $repo = new $repoClass($pdo);
-        
         switch ($action) {
             case 'list':
-                $this->listAction($repo, $entity, $action);
+                $this->listAction($entity);
                 break;
             case 'create':
-                $this->createAction($repo, $entity, $action);
+                $this->createAction($entity);
                 break;
             case 'edit':
-                $this->editAction($repo, $entity, $action);
+                $id = $_GET['id'] ?? 0;
+                $this->editAction($entity, $id);
                 break;
             case 'delete':
-                $this->deleteAction($repo, $entity, $action);
+                $id = $_GET['id'] ?? 0;
+                $this->deleteAction($entity, $id);
                 break;
             case 'view':
-                $this->viewAction($repo, $entity, $action);
+                $id = $_GET['id'] ?? 0;
+                $this->viewAction($entity, $id);
                 break;
             default:
-                $this->listAction($repo, $entity, 'list');
+                $this->listAction($entity);
         }
     }
-    
-    private function listAction($repo, $entity, $action)
+
+    public function listAction($entity)
     {
         $page = $_GET['page'] ?? 1;
         $search = $_GET['search'] ?? '';
         $limit = 10;
         $offset = ($page - 1) * $limit;
+        
+        $repo = $this->getRepository($entity);
         
         $where = '';
         $params = [];
@@ -62,22 +66,22 @@ class CrudController
         $totalPages = ceil($total / $limit);
         
         $title = $this->titles[$entity] ?? $entity;
-        $isEdit = false; // Добавлено, чтобы избежать Warning в форме, если она как-то затронута в списке
+        $action = 'list';
         require_once 'views/layout.php';
     }
-    
-    private function createAction($repo, $entity, $action)
+
+    public function createAction($entity)
     {
         $errors = [];
         $data = $_POST;
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // базовая валидация
             if (empty($data['last_name'])) $errors['last_name'] = 'Фамилия обязательна';
             if (empty($data['first_name'])) $errors['first_name'] = 'Имя обязательно';
             
             if (empty($errors)) {
                 try {
+                    $repo = $this->getRepository($entity);
                     $repo->create($data);
                     $_SESSION['flash'] = ['type' => 'success', 'message' => 'Запись создана'];
                     header("Location: index.php?entity=$entity&action=list");
@@ -89,13 +93,14 @@ class CrudController
         }
         
         $title = $this->titles[$entity] ?? $entity;
-        $isEdit = false; // Явно передаем, что это создание, а не редактирование
+        $action = 'create';
+        $isEdit = false;
         require_once 'views/layout.php';
     }
-    
-    private function editAction($repo, $entity, $action)
+
+    public function editAction($entity, $id)
     {
-        $id = $_GET['id'] ?? 0;
+        $repo = $this->getRepository($entity);
         $item = $repo->findById($id);
         $errors = [];
         
@@ -106,7 +111,15 @@ class CrudController
             
             if (empty($errors)) {
                 try {
-                    // update (нужно добавить метод в репозитории)
+                    // Для простоты используем update через SQL (если нет метода update в репозитории)
+                    $sql = "UPDATE " . $this->getTableName($entity) . " SET last_name = :last_name, first_name = :first_name, phone = :phone WHERE " . $this->getPrimaryKey($entity) . " = :id";
+                    $stmt = $this->pdo->prepare($sql);
+                    $stmt->execute([
+                        ':last_name' => $data['last_name'],
+                        ':first_name' => $data['first_name'],
+                        ':phone' => $data['phone'] ?? null,
+                        ':id' => $id
+                    ]);
                     $_SESSION['flash'] = ['type' => 'success', 'message' => 'Запись обновлена'];
                     header("Location: index.php?entity=$entity&action=list");
                     exit;
@@ -118,13 +131,14 @@ class CrudController
         }
         
         $title = $this->titles[$entity] ?? $entity;
-        $isEdit = true; // Явно передаем, что это режим редактирования
+        $action = 'edit';
+        $isEdit = true;
         require_once 'views/layout.php';
     }
-    
-    private function deleteAction($repo, $entity, $action)
+
+    public function deleteAction($entity, $id)
     {
-        $id = $_GET['id'] ?? 0;
+        $repo = $this->getRepository($entity);
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
@@ -141,16 +155,45 @@ class CrudController
         
         $item = $repo->findById($id);
         $title = $this->titles[$entity] ?? $entity;
-        $isEdit = false;
+        $action = 'delete';
         require_once 'views/layout.php';
     }
-    
-    private function viewAction($repo, $entity, $action)
+
+    public function viewAction($entity, $id)
     {
-        $id = $_GET['id'] ?? 0;
+        $repo = $this->getRepository($entity);
         $item = $repo->findById($id);
         $title = $this->titles[$entity] ?? $entity;
-        $isEdit = false;
+        $action = 'view';
         require_once 'views/layout.php';
+    }
+
+    private function getRepository($entity)
+    {
+        $repoClass = $this->repositories[$entity] ?? null;
+        if (!$repoClass) {
+            throw new Exception('Неизвестная сущность: ' . $entity);
+        }
+        return new $repoClass($this->pdo);
+    }
+
+    private function getTableName($entity)
+    {
+        switch ($entity) {
+            case 'athletes': return 'athletes';
+            case 'coaches': return 'coaches';
+            case 'sport_groups': return 'sport_groups';
+            default: return $entity;
+        }
+    }
+
+    private function getPrimaryKey($entity)
+    {
+        switch ($entity) {
+            case 'athletes': return 'athlete_id';
+            case 'coaches': return 'coach_id';
+            case 'sport_groups': return 'group_id';
+            default: return 'id';
+        }
     }
 }
