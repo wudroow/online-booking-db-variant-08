@@ -5,13 +5,13 @@ class CrudController
     private $repositories = [
         'athletes' => 'AthleteRepository',
         'coaches' => 'CoachRepository',
-        'sport_groups' => 'CoachRepository'
+        'sport_groups' => 'SportGroupRepository'
     ];
     
     private $titles = [
         'athletes' => 'Спортсмены',
         'coaches' => 'Тренеры',
-        'sport_groups' => 'Тренировочные группы'
+        'sport_groups' => 'Услуги'
     ];
 
     public function __construct()
@@ -57,11 +57,17 @@ class CrudController
         $where = '';
         $params = [];
         if ($search) {
-            $where = "last_name LIKE :search";
+            if ($entity === 'sport_groups') {
+                $where = "group_name LIKE :search";
+            } else {
+                $where = "last_name LIKE :search";
+            }
             $params = [':search' => "%$search%"];
         }
         
-        $items = $repo->findAll($where, $params, 'last_name ASC', "$limit OFFSET $offset");
+        $orderBy = ($entity === 'sport_groups') ? 'group_name ASC' : 'last_name ASC';
+        
+        $items = $repo->findAll($where, $params, $orderBy, "$limit OFFSET $offset");
         $total = count($repo->findAll($where, $params));
         $totalPages = ceil($total / $limit);
         
@@ -76,8 +82,12 @@ class CrudController
         $data = $_POST;
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            if (empty($data['last_name'])) $errors['last_name'] = 'Фамилия обязательна';
-            if (empty($data['first_name'])) $errors['first_name'] = 'Имя обязательно';
+            if ($entity === 'sport_groups') {
+                if (empty($data['group_name'])) $errors['group_name'] = 'Название группы обязательно';
+            } else {
+                if (empty($data['last_name'])) $errors['last_name'] = 'Фамилия обязательна';
+                if (empty($data['first_name'])) $errors['first_name'] = 'Имя обязательно';
+            }
             
             if (empty($errors)) {
                 try {
@@ -106,20 +116,34 @@ class CrudController
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = $_POST;
-            if (empty($data['last_name'])) $errors['last_name'] = 'Фамилия обязательна';
-            if (empty($data['first_name'])) $errors['first_name'] = 'Имя обязательно';
+            
+            if ($entity === 'sport_groups') {
+                if (empty($data['group_name'])) $errors['group_name'] = 'Название группы обязательно';
+            } else {
+                if (empty($data['last_name'])) $errors['last_name'] = 'Фамилия обязательна';
+                if (empty($data['first_name'])) $errors['first_name'] = 'Имя обязательно';
+            }
             
             if (empty($errors)) {
                 try {
-                    // Для простоты используем update через SQL (если нет метода update в репозитории)
-                    $sql = "UPDATE " . $this->getTableName($entity) . " SET last_name = :last_name, first_name = :first_name, phone = :phone WHERE " . $this->getPrimaryKey($entity) . " = :id";
-                    $stmt = $this->pdo->prepare($sql);
-                    $stmt->execute([
-                        ':last_name' => $data['last_name'],
-                        ':first_name' => $data['first_name'],
-                        ':phone' => $data['phone'] ?? null,
-                        ':id' => $id
-                    ]);
+                    if ($entity === 'sport_groups') {
+                        $sql = "UPDATE sport_groups SET group_name = :group_name, current_capacity = :current_capacity WHERE group_id = :id";
+                        $stmt = $this->pdo->prepare($sql);
+                        $stmt->execute([
+                            ':group_name' => $data['group_name'],
+                            ':current_capacity' => $data['current_capacity'] ?? 0,
+                            ':id' => $id
+                        ]);
+                    } else {
+                        $sql = "UPDATE " . $this->getTableName($entity) . " SET last_name = :last_name, first_name = :first_name, phone = :phone WHERE " . $this->getPrimaryKey($entity) . " = :id";
+                        $stmt = $this->pdo->prepare($sql);
+                        $stmt->execute([
+                            ':last_name' => $data['last_name'],
+                            ':first_name' => $data['first_name'],
+                            ':phone' => $data['phone'] ?? null,
+                            ':id' => $id
+                        ]);
+                    }
                     $_SESSION['flash'] = ['type' => 'success', 'message' => 'Запись обновлена'];
                     header("Location: index.php?entity=$entity&action=list");
                     exit;
@@ -179,21 +203,15 @@ class CrudController
 
     private function getTableName($entity)
     {
-        switch ($entity) {
-            case 'athletes': return 'athletes';
-            case 'coaches': return 'coaches';
-            case 'sport_groups': return 'sport_groups';
-            default: return $entity;
-        }
+        if ($entity === 'athletes') return 'athletes';
+        if ($entity === 'coaches') return 'coaches';
+        return 'sport_groups';
     }
 
     private function getPrimaryKey($entity)
     {
-        switch ($entity) {
-            case 'athletes': return 'athlete_id';
-            case 'coaches': return 'coach_id';
-            case 'sport_groups': return 'group_id';
-            default: return 'id';
-        }
+        if ($entity === 'athletes') return 'athlete_id';
+        if ($entity === 'coaches') return 'coach_id';
+        return 'group_id';
     }
 }
